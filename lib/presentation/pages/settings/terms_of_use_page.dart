@@ -11,7 +11,9 @@ class TermsOfUsePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      appBar: AppBar(
+      appBar: AppBar(flexibleSpace: Container(
+        color:Colors.white,
+      ),
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(

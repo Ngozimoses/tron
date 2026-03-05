@@ -62,8 +62,30 @@ class _OtpVerificationBottomSheetState extends State<OtpVerificationBottomSheet>
       newOtp += _controllers[i].text;
     }
     setState(() => _otp = newOtp);
+
+    // Auto-focus next field
     if (value.isNotEmpty && index < AppConstants.otpLength - 1) {
       FocusScope.of(context).requestFocus(_focusNodes[index + 1]);
+    }
+
+    // Auto-submit if OTP is complete
+    if (newOtp.length == AppConstants.otpLength) {
+      _verifyOtp();
+    }
+  }
+
+  void _verifyOtp() {
+    if (_otp.length == AppConstants.otpLength) {
+      context.read<AuthBloc>().add(
+        VerifyOtpEvent(widget.contact, _otp),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter complete OTP'),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 
@@ -139,6 +161,7 @@ class _OtpVerificationBottomSheetState extends State<OtpVerificationBottomSheet>
       );
     }
   }
+
   void _toggleLoginMode() {
     // Close bottom sheet first, then navigate
     Navigator.pop(context);
@@ -292,7 +315,7 @@ class _OtpVerificationBottomSheetState extends State<OtpVerificationBottomSheet>
                 builder: (context, state) {
                   return Row(
                     children: [
-                      // Change Phone Button
+                      // Close Button
                       Expanded(
                         child: CustomButton(
                           color: Colors.white,
@@ -316,20 +339,7 @@ class _OtpVerificationBottomSheetState extends State<OtpVerificationBottomSheet>
                           textColor: AppColors.textWhite,
                           text: 'Verify',
                           isLoading: state is AuthLoading,
-                          onPressed: () {
-                            if (_otp.length == AppConstants.otpLength) {
-                              context.read<AuthBloc>().add(
-                                VerifyOtpEvent(widget.contact, _otp),
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Please enter complete OTP'),
-                                  backgroundColor: AppColors.error,
-                                ),
-                              );
-                            }
-                          },
+                          onPressed: _verifyOtp,
                         ),
                       ),
                     ],
@@ -375,6 +385,9 @@ class _OtpVerificationBottomSheetState extends State<OtpVerificationBottomSheet>
               ),
             ),
             const SizedBox(height: 8),
+
+            // Add bottom padding to account for keyboard
+            SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
           ],
         ),
       ),

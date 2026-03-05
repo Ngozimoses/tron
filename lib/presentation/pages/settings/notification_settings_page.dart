@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 
 class NotificationSettingsPage extends StatefulWidget {
@@ -23,7 +24,9 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
+      appBar: AppBar(flexibleSpace: Container(
+        color:Colors.white,
+      ),centerTitle: false,
         backgroundColor: Colors.white,
         elevation: 0,
         leading:GestureDetector(
@@ -40,9 +43,9 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
             ),
           ),
         ),
-        title: const Text(
+        title: Text(
           'Notification Settings',
-          style: TextStyle(
+          style: GoogleFonts.outfit(
             color: Colors.black,
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -54,11 +57,11 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'A unique QR code will be generated for your visitor. The code expires automatically',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
+              style: GoogleFonts.outfit(
+                color: Color.fromRGBO(11, 11, 11, 0.45),
+                fontSize: 14,fontWeight: FontWeight.w400
               ),
             ),
             const SizedBox(height: 24),
@@ -145,26 +148,41 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color.fromRGBO(250, 250, 250, 1),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Text(
-        title,
-        style: const TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.outfit(
+              color: AppColors.primaryblack,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildNotificationCard(List<Widget> children) {
     return Container(
+      padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(
+          color: const Color.fromRGBO(156, 163, 175, 0.2),
+          width: 0.4,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         children: children,
@@ -193,18 +211,18 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                  style: GoogleFonts.outfit(
+                    color: AppColors.primaryblack,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
+                  style: GoogleFonts.outfit(
+                      color: Color.fromRGBO(11, 11, 11, 0.45),
+                      fontSize: 14,fontWeight: FontWeight.w400
                   ),
                 ),
               ],
@@ -213,7 +231,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppColors.primary,
+            activeColor: AppColors.primary,inactiveThumbColor:Color.fromRGBO(0, 0, 0, 1),inactiveTrackColor: Color.fromRGBO(196, 196, 196, 0.7),
           ),
         ],
       ),

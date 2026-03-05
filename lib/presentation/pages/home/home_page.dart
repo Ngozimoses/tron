@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../blocs/home/home_bloc.dart';
 import '../../blocs/home/home_event.dart';
@@ -17,23 +19,25 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage>  with SingleTickerProviderStateMixin{
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   DateTime? _qrExpiryTime;
   Timer? _countdownTimer;
-  String _qrCodeUrl = 'assets/images/mainqrcode.png';
+  String _qrData = ''; // Store the actual QR data
+  final String _residentId = 'RES123456'; // Replace with actual resident ID from your auth state
+  int _qrVersion = 0; // For QR rotation/versioning
 
   // ✅ Tab State
   int _selectedTabIndex = 0;
   final List<String> _tabs = ['My Events', 'Visitors QR List'];
-
+late String data = "user";
   // ✅ Filter States
   late EventFilter _selectedEventFilter;
   late VisitorFilter _selectedVisitorFilter;
 
-  // ✅ Bell Animation Variables (NEW)
+  // ✅ Bell Animation Variables
   late AnimationController _bellController;
   Timer? _jinglingTimer;
-  bool _hasNewNotifications = true; // You can set this based on actual notification state
+  bool _hasNewNotifications = true;
 
   @override
   void initState() {
@@ -60,7 +64,124 @@ class _HomePageState extends State<HomePage>  with SingleTickerProviderStateMixi
     _startCountdownTimer();
   }
 
-  // ✅ NEW: Bell animation methods
+  // Generate QR data with timestamp and version for security
+  String _generateQrData() {
+    final now = DateTime.now();
+    final expiryTime = now.add(const Duration(minutes: 5));
+
+    // Create a JSON object with relevant data
+    final qrMap = {
+      'type': 'resident_access',
+      'residentId': _residentId,
+      'timestamp': now.toIso8601String(),
+      'expiry': expiryTime.toIso8601String(),
+      'version': _qrVersion,
+      'signature': _generateSignature(now), // Simple signature for basic security
+    };
+
+    return jsonEncode(qrMap);
+  }
+// Add this method to show the QR code dialog
+  void _showQrCodeDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(20),
+          child: _buildQrCodeDialogContent(),
+        );
+      },
+    );
+  }
+
+  Widget _buildQrCodeDialogContent() {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.elasticOut,
+      builder: (context, scale, child) {
+        return Transform.scale(
+          scale: scale,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: _qrData.isNotEmpty
+                  ? QrImageView(
+                data: _qrData,
+                version: QrVersions.auto,
+                size: 250,
+                backgroundColor: Colors.white,
+                errorCorrectionLevel: QrErrorCorrectLevel.H,
+                eyeStyle: const QrEyeStyle(
+                  eyeShape: QrEyeShape.square,
+                  color: Color.fromRGBO(11, 11, 11, 0.7),
+                ),
+                dataModuleStyle: const QrDataModuleStyle(
+                  dataModuleShape: QrDataModuleShape.square,
+                  color: Color.fromRGBO(11, 11, 11, 0.7),
+                ),
+              )
+                  : Container(
+                width: 250,
+                height: 250,
+                color: Colors.grey.shade100,
+                child: const Icon(Icons.qr_code, size: 120, color: Colors.grey),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+  String _generateSignature(DateTime timestamp) {
+    final data = '$_residentId:${timestamp.millisecondsSinceEpoch}:$_qrVersion';
+    // This is a simple hash - in production, use proper crypto
+    return data.hashCode.toString();
+  }
+
+  void _generateNewQrCode() {
+    setState(() {
+      _qrVersion++; // Increment version for each new QR
+      _qrExpiryTime = DateTime.now().add(const Duration(minutes: 5));
+      _qrData = _generateQrData();
+    });
+  }
+
+  void _startCountdownTimer() {
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted && _qrExpiryTime != null) {
+        setState(() {
+          if (_qrExpiryTime!.isBefore(DateTime.now())) {
+            _generateNewQrCode();
+          }
+        });
+      }
+    });
+  }
   void _startJinglingAnimation() {
     _jinglingTimer?.cancel();
     _jinglingTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
@@ -81,24 +202,19 @@ class _HomePageState extends State<HomePage>  with SingleTickerProviderStateMixi
   Widget _buildNotificationBell() {
     return GestureDetector(
       onTap: () {
-        // Stop animation and navigate to notifications
+        // Stop animation and update badge state
         setState(() {
           _hasNewNotifications = false;
           _stopJinglingAnimation();
         });
 
-        // Immediate feedback when tapped
+        // Play bell animation
         _bellController.forward().then((_) {
           _bellController.reverse();
         });
 
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Opening notifications'),
-            duration: Duration(seconds: 1),
-          ),
-        );
+        // ✅ Navigate to notifications page
+        context.push('/notifications');
       },
       child: Stack(
         children: [
@@ -107,7 +223,6 @@ class _HomePageState extends State<HomePage>  with SingleTickerProviderStateMixi
             decoration: BoxDecoration(
               color: AppColors.textWhite,
               borderRadius: BorderRadius.circular(12),
-
             ),
             child: AnimatedBuilder(
               animation: _bellController,
@@ -167,48 +282,6 @@ class _HomePageState extends State<HomePage>  with SingleTickerProviderStateMixi
     );
   }
 
-  // ✅ UPDATE: Modify your existing _buildHeader method to use the animated bell
-  Widget _buildHeader(String name, {String? profileImageUrl}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // Left: Profile Avatar + Greeting
-        Row(
-          children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: AppColors.primary.withOpacity(0.1),
-              backgroundImage: profileImageUrl != null && profileImageUrl.isNotEmpty
-                  ? NetworkImage(profileImageUrl)
-                  : null,
-              child: profileImageUrl == null || profileImageUrl.isEmpty
-                  ? Text(
-                name.isNotEmpty ? name[0].toUpperCase() : 'R',
-                style: GoogleFonts.outfit(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              )
-                  : null,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Hi $name',
-              style: GoogleFonts.outfit(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
-              ),
-            ),
-          ],
-        ),
-
-        // Right: Animated Notification Icon (UPDATED)
-        _buildNotificationBell(),
-      ],
-    );
-  }
 
   // ✅ UPDATE: Add method to check for new notifications from your state
   void _checkForNewNotifications(HomeState state) {
@@ -244,16 +317,413 @@ class _HomePageState extends State<HomePage>  with SingleTickerProviderStateMixi
     }
   }
 
-  // ✅ UPDATE: Modify your dispose method to clean up animation
   @override
   void dispose() {
     _countdownTimer?.cancel();
-    _bellController.dispose(); // Clean up animation controller
-    _jinglingTimer?.cancel(); // Clean up timer
+    _bellController.dispose();
+    _jinglingTimer?.cancel();
     super.dispose();
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(flexibleSpace: Container(
+        color:Colors.white,
+      ),
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: CircleAvatar(
+            radius: 24,
+            backgroundColor: AppColors.primary.withOpacity(0.1),
+            backgroundImage: "data" != null && "data".isNotEmpty
+                ? NetworkImage("data")
+                : null,
+            child: "data" == null || "data".isEmpty
+                ? Text(
+              {data}.isNotEmpty ? data.toUpperCase() : 'R',
+              style: GoogleFonts.outfit(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            )
+                : null,
+          ),
+        ), centerTitle: false, title:  Text(
+          'Hi ${data}',
+          style: GoogleFonts.outfit(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
+        ),actions: [ _buildNotificationBell()],),
+      body: BlocBuilder<HomeBloc, HomeState>(
+        builder: (context, state) {
+          // Check for new notifications whenever state updates
+          _checkForNewNotifications(state);
 
+          if (state is HomeLoading) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (state is HomeLoaded) {
+
+              data = state.resident?.name ?? 'Resident';
+
+            return SafeArea(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header with Greeting
+
+                      const SizedBox(height: 20),
+
+                      // QR Code Section with actual QR generator
+                      _buildQRSection(),
+                      const SizedBox(height: 20),
+
+                      // Tabs
+                      _buildTabs(),
+                      const SizedBox(height: 16),
+
+                      // Tab Content
+                      _selectedTabIndex == 0
+                          ? _buildMyEventsSection(state.events ?? [])
+                          : _buildVisitorsQRListSection(state.pendingVisitors ?? []),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          } else if (state is HomeError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(state.message),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      context.read<HomeBloc>().add(LoadHome());
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+          return const Center(child: Text('Welcome'));
+        },
+      ),
+    );
+  }
+  Widget _buildQRSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'My Access QR',
+            style: GoogleFonts.outfit(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // QR Code with Profile Image at Center - Only this is tappable
+          GestureDetector(
+            onTap: _showQrCodeDialog,
+            child: Hero(
+              tag: 'qr-code-${_qrVersion}',
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // QR Code
+                    _qrData.isNotEmpty
+                        ? QrImageView(
+                      data: _qrData,
+                      version: QrVersions.auto,
+                      size: 150,
+                      backgroundColor: Colors.white,
+                      errorCorrectionLevel: QrErrorCorrectLevel.H,
+                      eyeStyle: const QrEyeStyle(
+                        eyeShape: QrEyeShape.square,
+                        color: Color.fromRGBO(11, 11, 11, 0.7),
+                      ),
+                      dataModuleStyle: const QrDataModuleStyle(
+                        dataModuleShape: QrDataModuleShape.square,
+                        color: Color.fromRGBO(11, 11, 11, 0.7),
+                      ),
+                    )
+                        : Container(
+                      width: 150,
+                      height: 150,
+                      color: Colors.grey.shade100,
+                      child: const Icon(Icons.qr_code, size: 80, color: Colors.grey),
+                    ),
+
+                    // Profile Image at Center
+                    Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white,
+                          width: 3,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            spreadRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: _buildProfileImage(),
+                      ),
+                    ),
+
+                    // Small tap indicator (optional - can remove if you want)
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.zoom_out_map,
+                          color: Colors.white,
+                          size: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Countdown (outside the tappable area)
+          RichText(
+            text: TextSpan(
+              style: GoogleFonts.outfit(
+                fontSize: 14,
+                color: Colors.black.withOpacity(0.7),
+                fontWeight: FontWeight.w500,
+              ),
+              children: [
+                TextSpan(
+                  text: 'Expires in ',
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: const Color.fromRGBO(11, 11, 11, 0.45),
+                  ),
+                ),
+                TextSpan(
+                  text: _getCountdownString(),
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: _getCountdownColor(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Buttons (outside the tappable area)
+          Row(
+            children: [
+              // Create Visitor QR Button
+              Expanded(
+                child: CustomButton(
+                  text: 'Create Visitor QR',
+                  onPressed: () {
+                    _navigateToCreateVisitorQR();
+                  },
+                  color: AppColors.primary,
+                  textColor: Colors.white,
+                  textsize: 14,
+                  textwidth: FontWeight.w400,
+                  height: 40,
+                  borderRadius: 12,
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Refresh Button
+              Expanded(
+                child: CustomButton(
+                  icon: const Icon(Icons.refresh, size: 18, color: Colors.black),
+                  text: 'Refresh',
+                  onPressed: () {
+                    _generateNewQrCode();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('QR code refreshed'),
+                        backgroundColor: AppColors.success,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  color: AppColors.primaryLight,
+                  textColor: const Color.fromRGBO(11, 11, 11, 0.7),
+                  textsize: 14,
+                  textwidth: FontWeight.w400,
+                  height: 40,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: AppColors.textWhite,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+  Widget _buildProfileImage() {
+    // You can get the profile image URL from your state
+    // For example, from the HomeBloc state
+    final profileImageUrl = ''; // Get this from your state
+
+    if (profileImageUrl.isNotEmpty) {
+      return Image.network(
+        profileImageUrl,
+        fit: BoxFit.cover,
+        width: 30,
+        height: 30,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: AppColors.primary.withOpacity(0.1),
+            child: Icon(
+              Icons.person,
+              size: 25,
+              color: AppColors.primary,
+            ),
+          );
+        },
+      );
+    } else {
+      // Fallback to initials or default icon
+      return Container(
+        color: AppColors.primary,
+        child: Center(
+          child: Text(
+            'R', // You can get the first letter of the resident's name
+            style: GoogleFonts.outfit(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
+  void _navigateToCreateVisitorQR() {
+    // Generate visitor QR data
+    final visitorData = {
+      'type': 'visitor_access',
+      'residentId': _residentId,
+      'generatedAt': DateTime.now().toIso8601String(),
+      'expiry': DateTime.now().add(const Duration(hours: 24)).toIso8601String(),
+      'version': _qrVersion,
+    };
+
+    // Navigate to visitor QR creation page with the data
+    context.push('/create-visitor-qr', extra: visitorData);
+  }
+
+  // Add method to validate QR data (for scanner side)
+  bool validateQrData(String qrData) {
+    try {
+      final Map<String, dynamic> data = jsonDecode(qrData);
+
+      // Check if it's a valid resident QR
+      if (data['type'] != 'resident_access') return false;
+
+      // Check if resident ID matches (in production, verify with backend)
+      if (data['residentId'] != _residentId) return false;
+
+      // Check if QR is expired
+      final expiry = DateTime.parse(data['expiry']);
+      if (expiry.isBefore(DateTime.now())) return false;
+
+      // Verify signature (in production, use proper verification)
+      final signature = _generateSignature(DateTime.parse(data['timestamp']));
+      if (data['signature'] != signature.toString()) return false;
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Color _getCountdownColor() {
+    if (_qrExpiryTime == null) return AppColors.primary;
+
+    final difference = _qrExpiryTime!.difference(DateTime.now());
+
+    if (difference.isNegative) return Colors.red;
+
+    final totalSeconds = difference.inSeconds;
+
+    if (totalSeconds < 30) {
+      return Colors.red;
+    } else if (totalSeconds < 60) {
+      return Colors.orange;
+    } else if (totalSeconds < 120) {
+      return Colors.amber;
+    } else {
+      return AppColors.success;
+    }
+  }
+
+  String _getCountdownString() {
+    if (_qrExpiryTime == null) return '--:--';
+
+    final difference = _qrExpiryTime!.difference(DateTime.now());
+    if (difference.isNegative) return 'Expired';
+
+    final minutes = difference.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = difference.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
   List<dynamic> _filterVisitors(List<dynamic> visitors) {
     final now = DateTime.now();
 
@@ -413,7 +883,7 @@ class _HomePageState extends State<HomePage>  with SingleTickerProviderStateMixi
               ),
             ),
             TextButton(
-              onPressed: () {},
+              onPressed: () {context.push('/event-qr-history');},
               child: Text(
                 'See all',
                 style: GoogleFonts.outfit(
@@ -487,7 +957,7 @@ class _HomePageState extends State<HomePage>  with SingleTickerProviderStateMixi
               ),
             ),
             TextButton(
-              onPressed: () {},
+              onPressed: () {context.push('/visitor-qr-history');},
               child: Text(
                 'See all',
                 style: GoogleFonts.outfit(color: AppColors.primary),
@@ -567,257 +1037,13 @@ class _HomePageState extends State<HomePage>  with SingleTickerProviderStateMixi
         return 'No visitor QR codes yet';
     }
   }
-  void _generateNewQrCode() {
-    setState(() {
-      _qrExpiryTime = DateTime.now().add(const Duration(minutes: 5));
-    });
-  }
 
-  void _startCountdownTimer() {
-    _countdownTimer?.cancel();
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted && _qrExpiryTime != null) {
-        setState(() {
-          if (_qrExpiryTime!.isBefore(DateTime.now())) {
-            _generateNewQrCode();
-          }
-        });
-      }
-    });
-  }
   String _formatEventDate(DateTime date) {
     final months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year} - ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-  }
-  String _getCountdownString() {
-    if (_qrExpiryTime == null) return '--:--';
-
-    final difference = _qrExpiryTime!.difference(DateTime.now());
-    if (difference.isNegative) return 'Expired';
-
-    final minutes = difference.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = difference.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: BlocBuilder<HomeBloc, HomeState>(
-        builder: (context, state) {
-          // Check for new notifications whenever state updates
-          _checkForNewNotifications(state);
-
-          if (state is HomeLoading) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (state is HomeLoaded) {
-            return SafeArea(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header with Greeting (now with animated bell)
-                      _buildHeader(state.resident?.name ?? 'Resident'),
-                      const SizedBox(height: 20),
-
-                      // QR Code Section
-                      _buildQRSection(),
-                      const SizedBox(height: 20),
-
-                      // Tabs
-                      _buildTabs(),
-                      const SizedBox(height: 16),
-
-                      // Tab Content
-                      _selectedTabIndex == 0
-                          ? _buildMyEventsSection(state.events ?? [])
-                          : _buildVisitorsQRListSection(state.pendingVisitors ?? []),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          } else if (state is HomeError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(state.message),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      context.read<HomeBloc>().add(LoadHome());
-                    },
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
-          }
-          return const Center(child: Text('Welcome'));
-        },
-      ),
-    );
-  }
-
-  Widget _buildQRSection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        children: [
-          Text(
-            'My Access QR',
-            style: GoogleFonts.outfit(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // QR Code
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Image.asset(
-              _qrCodeUrl,
-              width: 150,
-              height: 150,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  width: 150,
-                  height: 150,
-                  color: Colors.grey.shade100,
-                  child: const Icon(Icons.qr_code, size: 80, color: Colors.grey),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // ✅ FIXED: Countdown with separate color using RichText
-          RichText(
-            text: TextSpan(
-              style: GoogleFonts.outfit(
-                fontSize: 14,
-                color: Colors.black.withOpacity(0.7),
-                fontWeight: FontWeight.w500,
-              ),
-              children: [
-                  TextSpan(text: 'Expires in ',
-              style: GoogleFonts.outfit(
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                color:Color.fromRGBO(11, 11, 11, 0.45), // Dynamic color based on time remaining
-              ),),
-                TextSpan(
-                  text: _getCountdownString(),
-                  style: GoogleFonts.outfit(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    color: _getCountdownColor(), // Dynamic color based on time remaining
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Buttons
-          Row(
-            children: [
-              // Create Visitor QR Button
-              Expanded(
-                child: CustomButton(
-                  text: 'Create Visitor QR',
-                  onPressed: () {
-                    // Navigate to create visitor QR
-                  },
-                  color: AppColors.primary,
-                  textColor: Colors.white,
-                  textsize: 14,
-                  textwidth: FontWeight.w400,
-                  height: 40,
-                  borderRadius: 12,
-                  // No border needed for filled button
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // Refresh Button (Outlined style)
-              Expanded(
-                child: CustomButton(
-                  icon: const Icon(Icons.refresh, size: 18 ,color: Colors.black,),
-                  text: 'Refresh',
-                  onPressed: () {
-                    _generateNewQrCode();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('QR code refreshed'),
-                        backgroundColor: AppColors.success,
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  color:AppColors.primaryLight, // Background color
-                  textColor:  Color.fromRGBO(11, 11, 11, 0.7),
-                  textsize: 14,
-                  textwidth: FontWeight.w400,
-                  height: 40,
-                  borderRadius: 12,
-                  borderWidth: 1, // Add border for outlined effect
-                  borderColor: AppColors.textWhite,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getCountdownColor() {
-    if (_qrExpiryTime == null) return AppColors.primary;
-
-    final difference = _qrExpiryTime!.difference(DateTime.now());
-
-    if (difference.isNegative) return Colors.red;
-
-    final totalSeconds = difference.inSeconds;
-
-    // Color coding based on time remaining
-    if (totalSeconds < 30) {
-      return Colors.red; // Less than 30 seconds
-    } else if (totalSeconds < 60) {
-      return Colors.orange; // Less than 1 minute
-    } else if (totalSeconds < 120) {
-      return Colors.amber; // Less than 2 minutes
-    } else {
-      return AppColors.success; // More than 2 minutes
-    }
   }
 
   Widget _buildTabs() {
@@ -827,27 +1053,27 @@ class _HomePageState extends State<HomePage>  with SingleTickerProviderStateMixi
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.all(4),
-      child: Row(
+      child: Row(mainAxisAlignment: MainAxisAlignment.start,
         children: [
           // ✅ First Tab - My Events
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 4),
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedTabIndex = 0;
-                  });
-                },
-                child: Container(
-                  height: 33,
-                  decoration: BoxDecoration(
-                    color: _selectedTabIndex == 0
+          SizedBox(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedTabIndex = 0;
+                });
+              },
+              child: Container(
 
-                        ? const Color.fromRGBO(87, 40, 8, 1)
-                        : const Color.fromRGBO(231, 231, 231, 1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                decoration: BoxDecoration(
+                  color: _selectedTabIndex == 0
+
+                      ? const Color.fromRGBO(87, 40, 8, 1)
+                      : const Color.fromRGBO(231, 231, 231, 1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -875,9 +1101,8 @@ class _HomePageState extends State<HomePage>  with SingleTickerProviderStateMixi
               ),
             ),
           ),
-
-          // ✅ Second Tab - Visitors QR List
-          Expanded(
+          const SizedBox(width: 10),
+          SizedBox(
             child: GestureDetector(
               onTap: () {
                 setState(() {
@@ -885,35 +1110,38 @@ class _HomePageState extends State<HomePage>  with SingleTickerProviderStateMixi
                 });
               },
               child: Container(
-                height: 33,
+
                 decoration: BoxDecoration(
                   color: _selectedTabIndex == 1
                       ? const Color.fromRGBO(87, 40, 8, 1)
                       : const Color.fromRGBO(231, 231, 231, 1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.qr_code_scanner,
-                      size: 18,
-                      color: _selectedTabIndex == 1
-                          ? Colors.white
-                          : const Color.fromRGBO(156, 163, 175, 1),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _tabs[1],
-                      style: GoogleFonts.outfit(
-                        fontSize: 14,
-                        fontWeight: _selectedTabIndex == 1 ? FontWeight.w600 : FontWeight.w400,
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.qr_code_scanner,
+                        size: 18,
                         color: _selectedTabIndex == 1
                             ? Colors.white
                             : const Color.fromRGBO(156, 163, 175, 1),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      Text(
+                        _tabs[1],
+                        style: GoogleFonts.outfit(
+                          fontSize: 14,
+                          fontWeight: _selectedTabIndex == 1 ? FontWeight.w600 : FontWeight.w400,
+                          color: _selectedTabIndex == 1
+                              ? Colors.white
+                              : const Color.fromRGBO(156, 163, 175, 1),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -955,82 +1183,135 @@ class _HomePageState extends State<HomePage>  with SingleTickerProviderStateMixi
       statusColor = Colors.grey;
       statusText = 'Past';
     } else if (isUpcoming) {
-      statusColor = AppColors.info;
+      statusColor = Colors.orange;
       statusText = 'Upcoming';
     } else {
-      statusColor = AppColors.success;
+      statusColor = Colors.green;
       statusText = 'Active';
     }
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Avatar
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: AppColors.primary.withOpacity(0.1),
-            backgroundImage: event['avatar'] != null
-                ? NetworkImage(event['avatar'])
-                : null,
-            child: event['avatar'] == null
-                ? Text(
-              event['name']?[0]?.toUpperCase() ?? 'E',
-              style: GoogleFonts.outfit(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
+    return GestureDetector(
+      onTap: () {
+        context.push('/event-qr-code', extra: event);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Avatar (Square with rounded corners)
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
               ),
-            )
-                : null,
-          ),
-          const SizedBox(width: 12),
-
-          // Event Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  event['name'] ?? 'Event',
+              child: event['avatar'] != null
+                  ? ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  event['avatar'],
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Center(
+                      child: Text(
+                        event['name']?[0]?.toUpperCase() ?? 'E',
+                        style: GoogleFonts.outfit(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 24,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              )
+                  : Center(
+                child: Text(
+                  event['name']?[0]?.toUpperCase() ?? 'E',
                   style: GoogleFonts.outfit(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 24,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Hosted by: ${event['hosted_by'] ?? "Unknown"}',
-                  style: GoogleFonts.outfit(
-                    fontSize: 13,
-                    color: Colors.black.withOpacity(0.6),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // Event Details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Name
+                  Text(
+                    event['name'] ?? 'Event',
+                    style: GoogleFonts.outfit(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  // Hosted by
+                  Text(
+                    'Hosted by: ${event['hosted_by'] ?? "Unknown"}',
+                    style: GoogleFonts.outfit(
+                      fontSize: 13,
+                      color: Colors.black.withOpacity(0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Right side: Status and Date/Time
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Status Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: GoogleFonts.outfit(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: statusColor,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
-                if (eventDate != null) ...[
+                // Date and Time
+                if (eventDate != null)
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.calendar_today,
+                        Icons.access_time,
                         size: 14,
                         color: AppColors.textSecondary,
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        _formatEventDate(eventDate), // ✅ Now safe to call
+                        _formatEventDate(eventDate),
                         style: GoogleFonts.outfit(
                           fontSize: 12,
                           color: AppColors.textSecondary,
@@ -1038,166 +1319,204 @@ class _HomePageState extends State<HomePage>  with SingleTickerProviderStateMixi
                       ),
                     ],
                   ),
-                ],
               ],
             ),
-          ),
-
-          // Status Badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              statusText,
-              style: GoogleFonts.outfit(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: statusColor,
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+
 
   Widget _buildVisitorQRCard(dynamic visitor) {
     // Determine visitor status based on QR code expiry or usage
     final now = DateTime.now();
-
-    // Assuming visitor has 'expiryDate' or 'isUsed' fields
-    // You may need to adjust these based on your actual data structure
     final expiryDate = visitor['expiryDate'] != null
         ? DateTime.tryParse(visitor['expiryDate'])
         : null;
     final isUsed = visitor['isUsed'] ?? false;
+    final isRevoked = visitor['isRevoked'] ?? false;
 
     Color statusColor;
     String statusText;
 
-    if (isUsed) {
-      statusColor = AppColors.success;
+    if (isRevoked) {
+      statusColor = Colors.red;
+      statusText = 'Revoked';
+    } else if (isUsed) {
+      statusColor = Colors.grey;
       statusText = 'Used';
     } else if (expiryDate != null && expiryDate.isBefore(now)) {
       statusColor = Colors.grey;
-      statusText = 'Revoked';
-    } else if (expiryDate != null && expiryDate.isAfter(now)) {
-      statusColor = AppColors.info;
-      statusText = 'Active';
+      statusText = 'Expired';
     } else {
-      // Default case if no status info available
-      statusColor = AppColors.info;
+      statusColor = Colors.green;
       statusText = 'Active';
     }
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Avatar with initial
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: AppColors.primary.withOpacity(0.1),
-            child: Text(
-              visitor['name']?[0]?.toUpperCase() ?? 'V',
-              style: GoogleFonts.outfit(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
+    // Calculate time left if active
+    String? timeLeft;
+    if (!isUsed && !isRevoked && expiryDate != null && expiryDate.isAfter(now)) {
+      final difference = expiryDate.difference(now);
+      final minutes = difference.inMinutes;
+      if (minutes < 60) {
+        timeLeft = '$minutes min left';
+      } else if (minutes < 1440) {
+        final hours = minutes ~/ 60;
+        timeLeft = '$hours hr${hours > 1 ? 's' : ''} left';
+      } else {
+        final days = minutes ~/ 1440;
+        timeLeft = '$days day${days > 1 ? 's' : ''} left';
+      }
+    }
 
-          // Visitor Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  visitor['name'] ?? 'Visitor',
-                  style: GoogleFonts.outfit(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
-                  ),
+    return GestureDetector(
+      onTap: () {
+        context.push('/visitor-qr-code', extra: visitor);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Avatar (Square with rounded corners)
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: visitor['avatar'] != null
+                  ? ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  visitor['avatar'],
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return _buildAvatarIcon(visitor);
+                  },
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  visitor['purpose'] ?? 'Visit',
-                  style: GoogleFonts.outfit(
-                    fontSize: 13,
-                    color: Colors.black.withOpacity(0.6),
-                  ),
-                ),
-                // Optional: Show expiry time if available and not used
-                if (!isUsed && expiryDate != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.access_time,
-                          size: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Expires: ${_formatTime(expiryDate)}',
-                          style: GoogleFonts.outfit(
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
+              )
+                  : _buildAvatarIcon(visitor),
+            ),
+            const SizedBox(width: 12),
+
+            // Visitor Details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Name
+                  Text(
+                    visitor['name'] ?? 'Visitor',
+                    style: GoogleFonts.outfit(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
                     ),
                   ),
-              ],
-            ),
-          ),
-
-          // Status Badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              statusText,
-              style: GoogleFonts.outfit(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: statusColor,
+                  const SizedBox(height: 4),
+                  // Created by you or time left
+                  Text(
+                    timeLeft ?? 'Created by you',
+                    style: GoogleFonts.outfit(
+                      fontSize: 13,
+                      color: timeLeft != null
+                          ? Colors.orange
+                          : Colors.black.withOpacity(0.6),
+                      fontWeight: timeLeft != null ? FontWeight.w500 : FontWeight.normal,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
 
-          const SizedBox(width: 8),
-          const Icon(
-            Icons.chevron_right,
-            color: AppColors.textSecondary,
-          ),
-        ],
+            // Right side: Status and Date/Time
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Status Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: GoogleFonts.outfit(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Date and Time
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _formatEventDate(expiryDate ?? now),
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
+// Helper method to build avatar icon
+  Widget _buildAvatarIcon(dynamic visitor) {
+    final name = visitor['name'] ?? 'Visitor';
+    final purpose = visitor['purpose']?.toLowerCase() ?? '';
+
+    // Check if it's a delivery rider
+    if (purpose.contains('delivery') || purpose.contains('rider')) {
+      return const Icon(
+        Icons.delivery_dining,
+        color: AppColors.primary,
+        size: 28,
+      );
+    }
+
+    // Default: show first letter
+    return Center(
+      child: Text(
+        name[0]?.toUpperCase() ?? 'V',
+        style: GoogleFonts.outfit(
+          color: AppColors.primary,
+          fontWeight: FontWeight.bold,
+          fontSize: 24,
+        ),
+      ),
+    );
+  }
 
   String _formatTime(DateTime dateTime) {
     return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';

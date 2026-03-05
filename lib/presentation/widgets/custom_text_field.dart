@@ -48,6 +48,7 @@ class CustomTextField extends StatelessWidget {
       ),
       decoration: InputDecoration(
         hintText:label ,
+
         prefixIcon: prefixIcon,
         suffixIcon: suffixIcon,
         hintStyle: GoogleFonts.outfit(

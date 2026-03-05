@@ -1,8 +1,7 @@
-// lib/presentation/widgets/enable_biometric_bottom_sheet.dart
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
+import 'lock_animation.dart';
 
 class EnableBiometricBottomSheet extends StatelessWidget {
   final VoidCallback onEnable;
@@ -38,12 +37,8 @@ class EnableBiometricBottomSheet extends StatelessWidget {
             ),
           ),
 
-          // Icon
-          Icon(
-            Icons.fingerprint,
-            size: 64,
-            color: AppColors.primary,
-          ),
+          // ✅ REPLACED: Padlock + Key animation instead of fingerprint icon
+          const PadlockBiometricAnimation(),
           const SizedBox(height: 24),
 
           // Title
@@ -72,7 +67,6 @@ class EnableBiometricBottomSheet extends StatelessWidget {
           // Buttons
           Row(
             children: [
-              // Not Now Button
               Expanded(
                 child: OutlinedButton(
                   onPressed: onSkip,
@@ -94,7 +88,6 @@ class EnableBiometricBottomSheet extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Enable Biometrics Button
               Expanded(
                 child: ElevatedButton(
                   onPressed: onEnable,
@@ -106,7 +99,7 @@ class EnableBiometricBottomSheet extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    'Enable Biometrics',
+                    'Enable',
                     style: GoogleFonts.outfit(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -119,7 +112,6 @@ class EnableBiometricBottomSheet extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Hint text
           Text(
             'You can turn this on later in Settings.',
             style: GoogleFonts.outfit(
@@ -129,7 +121,8 @@ class EnableBiometricBottomSheet extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 8),
+              const SizedBox(height: 16),
+
         ],
       ),
     );

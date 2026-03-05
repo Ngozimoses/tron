@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_colors.dart';
 
@@ -20,32 +21,56 @@ class ContactPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
+      backgroundColor: Colors.white,
+      appBar: AppBar(flexibleSpace: Container(
+        color:Colors.white,
+      ),
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => context.pop(),
-        ),
-        title: const Text(
-          'Contact',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+        leading:GestureDetector(
+          onTap: () => context.pop(),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Container(
+
+              decoration: BoxDecoration(
+                color: Color.fromRGBO(156, 163, 175, 1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.arrow_back_ios, size: 12, color: Colors.white),
+            ),
           ),
         ),
+        title:   Text(
+          'Contact',
+          style: GoogleFonts.outfit(
+            color: AppColors.primaryblack,
+            fontSize: 24,
+            fontWeight: FontWeight.w500,
+          ),
+        ),centerTitle: false,
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             Container(
+              padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.divider),
+                border: Border.all(
+                  color: const Color.fromRGBO(156, 163, 175, 0.2),
+                  width: 0.4,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Column(
                 children: [

@@ -40,16 +40,21 @@ class AuthRepositoryImpl implements AuthRepository {
     }
     try {
       final result = await remoteDataSource.verifyOtp(contact: contact, otp: otp);
-      // Save resident ID locally
-      await localDataSource.saveResidentId(result.id);
-      return Right(result);
+
+      // ✅ Save both resident ID and auth token
+      final resident = result['resident'] as Resident;
+      final token = result['token'] as String;
+
+      await localDataSource.saveResidentId(resident.id);
+      await localDataSource.saveAuthToken(token); // Make sure this method exists
+
+      return Right(resident);
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
   }
-
   @override
   Future<Either<Failure, bool>> setupLocalAuth({required String pin, bool bioEnabled = false}) async {
     try {

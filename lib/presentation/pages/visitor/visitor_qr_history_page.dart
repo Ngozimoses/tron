@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 
 class VisitorQRHistoryPage extends StatefulWidget {
@@ -52,75 +53,60 @@ class _VisitorQRHistoryPageState extends State<VisitorQRHistoryPage> {
     return _visitorQRs.where((qr) => qr['status'] == _selectedFilter).toList();
   }
 
+  int _getCount(String status) {
+    if (status == 'All') return _visitorQRs.length;
+    return _visitorQRs.where((qr) => qr['status'] == status).length;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
+      appBar: AppBar(flexibleSpace: Container(
+        color:Colors.white,
+      ),
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => context.pop(),
-        ),
-        title: const Text(
-          'Visitor QR History',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+        leading:GestureDetector(
+          onTap: () => context.pop(),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Container(
+
+              decoration: BoxDecoration(
+                color: Color.fromRGBO(156, 163, 175, 1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.arrow_back_ios, size: 12, color: Colors.white),
+            ),
           ),
         ),
+        title:   Text(
+          'Visitor QR History',
+          style: GoogleFonts.outfit(
+            color: Colors.black,
+            fontSize: 24,
+            fontWeight: FontWeight.w500,
+          ),
+        ),centerTitle: false,
       ),
       body: Column(
         children: [
           // Filter Tabs
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: ['All', 'Active', 'Expired', 'Revoked'].map((filter) {
-                  final isSelected = _selectedFilter == filter;
-                  return Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _selectedFilter = filter;
-                        });
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isSelected ? AppColors.primary : Colors.white,
-                        foregroundColor: isSelected ? Colors.white : AppColors.textPrimary,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Row(
-                        children: [
-                          Text(filter),
-                          if (filter == 'All') ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: isSelected ? Colors.white.withOpacity(0.2) : AppColors.background,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '${_visitorQRs.length}',
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
+                children: [
+                  _buildFilterTab('All', _getCount('All')),
+                  const SizedBox(width: 8),
+                  _buildFilterTab('Active', _getCount('Active')),
+                  const SizedBox(width: 8),
+                  _buildFilterTab('Expired', _getCount('Expired')),
+                  const SizedBox(width: 8),
+                  _buildFilterTab('Revoked', _getCount('Revoked')),
+                ],
               ),
             ),
           ),
@@ -142,6 +128,55 @@ class _VisitorQRHistoryPageState extends State<VisitorQRHistoryPage> {
     );
   }
 
+  Widget _buildFilterTab(String label, int count) {
+    final isSelected = _selectedFilter == label;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedFilter = label;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary :Color.fromRGBO(254, 234, 220, 1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.outfit(
+                color: isSelected ? Colors.white : Color.fromRGBO(156, 163, 175, 1),
+                fontWeight:   FontWeight.w400,
+                fontSize: 12,
+              ),
+            ),
+            if (count > 0) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.white.withOpacity(0.2) : Color.fromRGBO(156, 163, 175, 1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  count.toString(),
+                  style: GoogleFonts.outfit(
+                    color: isSelected ? Colors.white : Color.fromRGBO(249, 250, 251, 1),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildQRCard(Map<String, dynamic> qr) {
     final isActive = qr['status'] == 'Active';
     final isExpired = qr['status'] == 'Expired';
@@ -152,10 +187,19 @@ class _VisitorQRHistoryPageState extends State<VisitorQRHistoryPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header with Avatar and Name
           Row(
             children: [
               // Avatar
@@ -163,202 +207,241 @@ class _VisitorQRHistoryPageState extends State<VisitorQRHistoryPage> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: qr['avatar'] != null
                     ? ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(qr['avatar'], fit: BoxFit.cover),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    qr['avatar'],
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Center(
+                        child: Icon(
+                          _getIconForType(qr['type']),
+                          color: AppColors.primary,
+                          size: 24,
+                        ),
+                      );
+                    },
+                  ),
                 )
-                    : Icon(
-                  qr['type'] == 'Delivery' ? Icons.local_shipping : Icons.person,
-                  color: AppColors.textHint,
-                  size: 24,
+                    : Center(
+                  child: Icon(
+                    _getIconForType(qr['type']),
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      qr['name'],
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 16,
+                child: Text(
+                  qr['name'],
+                  style: GoogleFonts.outfit(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Purpose Row
+          Row(
+            children: [
+              Text(
+                'Purpose',
+                style: GoogleFonts.outfit(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: Color.fromRGBO(11, 11, 11, 0.7),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                qr['purpose'],
+                style: GoogleFonts.outfit(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: Color.fromRGBO(11, 11, 11, 0.7),
+                ),
+                textAlign: TextAlign.right,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Status Row
+          Row(
+            children: [
+              Text(
+                'Status',
+                style: GoogleFonts.outfit(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: Color.fromRGBO(11, 11, 11, 0.7),
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _getStatusColor(qr['status']).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  qr['status'],
+                  style: GoogleFonts.outfit(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: _getStatusColor(qr['status']),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Time Info Row
+          Row(
+            children: [
+              Text(
+                isActive ? 'Expires in:' : (isExpired ? 'Expired:' : 'Revoked'),
+                style: GoogleFonts.outfit(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: isActive ? Colors.orange : AppColors.textSecondary,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                isActive
+                    ? qr['expiresIn']
+                    : (isExpired ? qr['expired'] : qr['revoked']),
+                style: GoogleFonts.outfit(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: isActive ? Colors.orange : AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Action Buttons
+          Row(mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (isActive) ...[
+                // View QR Button
+                SizedBox(height: 40,width: 130,
+                  child: OutlinedButton(
+                    onPressed: () { context.push('/visitor-qr-code', extra: {
+                      'name': qr['name']?? 'John Doe',
+                      'purpose':qr['purpose']?? 'Guest Visit',
+                      'visitType': qr['type'] ?? 'guest',
+                      'duration': qr['expiresIn'],
+                      'status': qr['status'],
+                    });
+
+
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: AppColors.primary, width: 1.5),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: Text(
+                      'View QR',
+                      style: GoogleFonts.outfit(
+                        color: AppColors.primary,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Purpose: ${qr['purpose']}',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Text(
-                          'Status: ',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 13,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: isActive
-                                ? Colors.green.withOpacity(0.1)
-                                : isExpired
-                                ? Colors.orange.withOpacity(0.1)
-                                : Colors.red.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            qr['status'],
-                            style: TextStyle(
-                              color: isActive
-                                  ? Colors.green
-                                  : isExpired
-                                  ? Colors.orange
-                                  : Colors.red,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    if (isActive) ...[
-                      Row(
-                        children: [
-                          const Text(
-                            'Expires in: ',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 13,
-                            ),
-                          ),
-                          Text(
-                            qr['expiresIn'],
-                            style: const TextStyle(
-                              color: Colors.orange,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ] else if (isExpired) ...[
-                      Text(
-                        'Expired: ${qr['expired']}',
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ] else if (isRevoked) ...[
-                      Text(
-                        'Revoked: ${qr['revoked']}',
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              if (isActive) ...[
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      context.push('/visitor-qr/${qr['id']}');
-                    },
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.primary),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text(
-                      'View QR',
-                      style: TextStyle(color: AppColors.primary),
-                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
+                const SizedBox(width: 12),
+                // Revoke Button
+                SizedBox(height: 40,width: 130,
                   child: ElevatedButton(
                     onPressed: () {
                       _showRevokeDialog(qr);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      backgroundColor: Colors.red.shade500,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'Revoke',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    child: const Text('Revoke'),
                   ),
                 ),
               ] else ...[
-                Expanded(
+                // Regenerate QR Button
+                SizedBox(height: 40,width: 130,
                   child: OutlinedButton(
                     onPressed: () {
-                      // Regenerate QR
+                      // Regenerate QR logic
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('QR regenerated')),
+                      );
                     },
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.primary),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      side: BorderSide(color: AppColors.primary, width: 1.5),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Regenerate QR',
-                      style: TextStyle(color: AppColors.primary),
+                      style: GoogleFonts.outfit(
+                        color: AppColors.primary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
                 if (isRevoked) ...[
-                  const SizedBox(width: 8),
-                  Expanded(
+                  const SizedBox(width: 12),
+                  // Delete Button
+                  SizedBox(height: 40,width: 130,
                     child: ElevatedButton(
                       onPressed: () {
-                        // Delete QR
+                        _showDeleteDialog(qr);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        backgroundColor: Colors.red.shade500,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        'Delete',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      child: const Text('Delete'),
                     ),
                   ),
                 ],
@@ -370,19 +453,51 @@ class _VisitorQRHistoryPageState extends State<VisitorQRHistoryPage> {
     );
   }
 
+  IconData _getIconForType(String? type) {
+    switch (type?.toLowerCase()) {
+      case 'delivery':
+        return Icons.delivery_dining;
+      case 'service':
+        return Icons.build;
+      default:
+        return Icons.person;
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return Colors.green;
+      case 'expired':
+        return Colors.grey;
+      case 'revoked':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
   void _showRevokeDialog(Map<String, dynamic> qr) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text('Revoke QR Code'),
-        content: Text('Are you sure you want to revoke the QR code for ${qr['name']}?'),
+        content: Text(
+          'Are you sure you want to revoke the QR code for ${qr['name']}?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade500,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             onPressed: () {
               Navigator.pop(context);
               setState(() {
@@ -397,6 +512,46 @@ class _VisitorQRHistoryPageState extends State<VisitorQRHistoryPage> {
               );
             },
             child: const Text('Revoke'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteDialog(Map<String, dynamic> qr) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text('Delete QR Code'),
+        content: Text(
+          'Are you sure you want to delete the QR code for ${qr['name']}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade500,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() {
+                _visitorQRs.remove(qr);
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('QR code deleted successfully'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+            child: const Text('Delete'),
           ),
         ],
       ),

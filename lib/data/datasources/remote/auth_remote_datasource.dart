@@ -2,10 +2,10 @@ import 'package:dio/dio.dart';
 import '../../../core/constants/api_constants.dart.dart';
 import '../../../core/errors/exceptions.dart';
 import '../../models/resident_model.dart';
-
+// In auth_remote_datasource.dart
 abstract class AuthRemoteDataSource {
   Future<bool> sendOtp({required String contact});
-  Future<ResidentModel> verifyOtp({required String contact, required String otp});
+  Future<Map<String, dynamic>> verifyOtp({required String contact, required String otp}); // Changed return type
   Future<void> logout();
 }
 
@@ -33,15 +33,21 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<ResidentModel> verifyOtp({required String contact, required String otp}) async {
+  Future<Map<String, dynamic>> verifyOtp({required String contact, required String otp}) async {
     try {
       final response = await client.post(
         ApiConstants.verifyOtp,
         data: {'contact': contact, 'otp': otp},
       );
+
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return ResidentModel.fromJson(response.data['resident']);
+        // ✅ Return both resident and token
+        return {
+          'resident': ResidentModel.fromJson(response.data['resident']),
+          'token': response.data['token'] ?? 'mock_token_${DateTime.now().millisecondsSinceEpoch}',
+        };
       }
+
       throw ServerException(
         message: response.data['message'] ?? 'Failed to verify OTP',
         statusCode: response.statusCode,

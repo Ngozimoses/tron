@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 
 class HelpSupportPage extends StatelessWidget {
@@ -11,7 +12,9 @@ class HelpSupportPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
+      appBar: AppBar(flexibleSpace: Container(
+        color:Colors.white,
+      ),
         backgroundColor: Colors.white,
         elevation: 0,
         leading:GestureDetector(
@@ -28,14 +31,14 @@ class HelpSupportPage extends StatelessWidget {
             ),
           ),
         ),
-        title: const Text(
+        title: Text(
           'Help & Support',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+          style: GoogleFonts.outfit(
+            color: AppColors.primaryblack,
+            fontSize: 24,
+            fontWeight: FontWeight.w500,
           ),
-        ),
+        ),centerTitle: false,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -85,7 +88,7 @@ class HelpSupportPage extends StatelessWidget {
             _buildHelpCard([
               _buildMenuItem(
                 title: 'Report Technical Issue',
-                onTap: () {},
+                onTap: () {_showReportModal(context);},
               ),
               _buildMenuItem(
                 title: 'Send Feedback',
@@ -104,26 +107,41 @@ class HelpSupportPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color.fromRGBO(250, 250, 250, 1),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Text(
-        title,
-        style: const TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.outfit(
+              color: AppColors.primaryblack,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildHelpCard(List<Widget> children) {
     return Container(
+      padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(
+          color: const Color.fromRGBO(156, 163, 175, 0.2),
+          width: 0.4,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         children: children,
@@ -149,10 +167,10 @@ class HelpSupportPage extends StatelessWidget {
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 14,
-                ),
+                style: GoogleFonts.outfit(
+                  color: AppColors.primaryblack,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,)
               ),
             ),
             const Icon(
@@ -172,6 +190,13 @@ class HelpSupportPage extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const _FeedbackModal(),
+    );
+  }  void _showReportModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _ReportModal(),
     );
   }
 }
@@ -208,12 +233,12 @@ class _FeedbackModalState extends State<_FeedbackModal> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Send Feedback',
-                style: TextStyle(
-                  fontSize: 18,
+                style: GoogleFonts.outfit(
+                  fontSize: 24,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: AppColors.primaryblack,
                 ),
               ),
               GestureDetector(
@@ -223,54 +248,212 @@ class _FeedbackModalState extends State<_FeedbackModal> {
             ],
           ),
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.divider),
-            ),
-            child: TextField(
-              controller: _feedbackController,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                hintText: 'Feedback',
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
+          TextField(
+            controller: _feedbackController,
+            maxLines: 4,
+            decoration:   InputDecoration(
+              hintText: 'Feedback',
+              hintStyle: GoogleFonts.outfit(
+                color: const Color.fromRGBO(156, 163, 175, 1),
+                fontWeight: FontWeight.w400,
+                fontSize: 16,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: Color.fromRGBO(156, 163, 175, 1),
+                  width: 1,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: Color.fromRGBO(156, 163, 175, 1),
+                  width: 1,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.red, width: 1),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.red, width: 2),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
               ),
             ),
           ),
           const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                if (_feedbackController.text.isNotEmpty) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Feedback sent successfully'),
-                      backgroundColor: Colors.green,
+          Row(mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(height: 48,
+                width: 159,
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (_feedbackController.text.isNotEmpty) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Feedback sent successfully'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Send Feedback',
+                    style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
-              child: const Text(
-                'Send Feedback',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+class _ReportModal extends StatefulWidget {
+  const _ReportModal({Key? key}) : super(key: key);
+
+  @override
+  State<_ReportModal> createState() => _ReportModalState();
+}
+
+class _ReportModalState extends State<_ReportModal> {
+  final _feedbackController = TextEditingController();
+
+  @override
+  void dispose() {
+    _feedbackController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Report Technical Issue',
+                style: GoogleFonts.outfit(
+                  fontSize: 24,
                   fontWeight: FontWeight.w600,
+                  color: AppColors.primaryblack,
                 ),
+              ),
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: const Icon(Icons.close, color: AppColors.textHint),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _feedbackController,
+            maxLines: 4,
+            decoration:   InputDecoration(
+              hintText: 'Report Technical Issue',
+              hintStyle: GoogleFonts.outfit(
+                color: const Color.fromRGBO(156, 163, 175, 1),
+                fontWeight: FontWeight.w400,
+                fontSize: 16,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: Color.fromRGBO(156, 163, 175, 1),
+                  width: 1,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: Color.fromRGBO(156, 163, 175, 1),
+                  width: 1,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.red, width: 1),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.red, width: 2),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
               ),
             ),
+          ),
+          const SizedBox(height: 24),
+          Row(mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(height: 48,
+                width: 159,
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (_feedbackController.text.isNotEmpty) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Report sent successfully'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'Send Report',
+                    style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

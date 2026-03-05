@@ -2,8 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/svg_icons.dart';
 
 class ServiceListingPage extends StatefulWidget {
   final String query;
@@ -65,8 +67,10 @@ class _ServiceListingPageState extends State<ServiceListingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
+      backgroundColor: Colors.white,
+      appBar: AppBar(flexibleSpace: Container(
+        color:Colors.white,
+      ),
         backgroundColor: Colors.white,
         elevation: 0,
 
@@ -97,29 +101,68 @@ class _ServiceListingPageState extends State<ServiceListingPage> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.divider),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search for services...',
+                  hintStyle: GoogleFonts.outfit(
+              color: Color.fromRGBO(156, 163, 175, 1),
+                fontWeight: FontWeight.w400,
+                fontSize: 16
+            ),   prefixIcon:      Padding(
+                padding: const EdgeInsets.all(12),
+                child: SvgIcons.search(size: 20),
               ),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search for services...',
-                  border: InputBorder.none,
-                  prefixIcon: const Icon(Icons.search, color: AppColors.textHint),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                    icon: const Icon(Icons.clear, color: AppColors.textHint),
-                    onPressed: () {
-                      _searchController.clear();
-                      setState(() {});
-                    },
-                  )
-                      : null,
-                ),
+                border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(
+          color: Color.fromRGBO(156, 163, 175, 1),
+          width: 1,
+        ),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(
+          color: Color.fromRGBO(156, 163, 175, 1),
+          width: 1,
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(
+          color: Color.fromRGBO(156, 163, 175, 1),
+          width: 1,
+        ),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(
+          color: Colors.red,
+          width: 1,
+        ),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(
+          color: Colors.red,
+          width: 2,
+        ),
+      ),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 12,
+      ),
+
+
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                  icon: const Icon(Icons.clear, color: AppColors.textHint),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {});
+                  },
+                )
+                    : null,
               ),
             ),
           ),

@@ -18,6 +18,11 @@ abstract class AuthLocalDataSource {
   Future<void> saveResidentId(String id);
   Future<String?> getResidentId();
   Future<void> clearAuthData();
+  Future<bool> isLoggedIn();
+  Future<void> setConnectedEstate(bool value);
+  Future<bool?> hasConnectedEstate();
+  Future<void> setCompletedProfile(bool value);
+  Future<bool?> hasCompletedProfile();
 }
 
 class AuthLocalDataSourceImpl implements AuthLocalDataSource {
@@ -25,13 +30,36 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   final SharedPreferences prefs;
 
   AuthLocalDataSourceImpl({required this.storage, required this.prefs});
-
+  @override
+  Future<bool> isLoggedIn() async {
+    final token = await getAuthToken();
+    final residentId = await getResidentId();
+    return token != null && residentId != null && token.isNotEmpty;
+  }
   @override
   Future<void> savePin(String pin) async {
     final hash = sha256.convert(utf8.encode(pin)).toString();
     await storage.write(key: StorageKeys.pinHash, value: hash);
   }
+  @override
+  Future<void> setConnectedEstate(bool value) async {
+    await prefs.setBool('has_connected_estate', value);
+  }
 
+  @override
+  Future<bool?> hasConnectedEstate() async {
+    return prefs.getBool('has_connected_estate');
+  }
+
+  @override
+  Future<void> setCompletedProfile(bool value) async {
+    await prefs.setBool('has_completed_profile', value);
+  }
+
+  @override
+  Future<bool?> hasCompletedProfile() async {
+    return prefs.getBool('has_completed_profile');
+  }
   @override
   Future<void> enableBiometric() async {
     await storage.write(key: StorageKeys.bioEnabled, value: 'true');

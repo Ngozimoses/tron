@@ -51,26 +51,28 @@ class _OnboardingPageState extends State<OnboardingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: BlocBuilder<OnboardingBloc, OnboardingState>(
-        builder: (context, state) {
-          return Column(
-            children: [
-              Expanded(
-                child: PageView.builder(
-                  controller: _pageController,
-                  onPageChanged: (index) {
-                    setState(() => _currentPage = index);
-                    context.read<OnboardingBloc>().add(OnboardingPageChanged(index));
-                  },
-                  itemCount: _pages.length,
-                  itemBuilder: (context, index) => _buildPage(_pages[index]),
+      body: SafeArea(
+        child: BlocBuilder<OnboardingBloc, OnboardingState>(
+          builder: (context, state) {
+            return Column(
+              children: [
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: (index) {
+                      setState(() => _currentPage = index);
+                      context.read<OnboardingBloc>().add(OnboardingPageChanged(index));
+                    },
+                    itemCount: _pages.length,
+                    itemBuilder: (context, index) => _buildPage(_pages[index]),
+                  ),
                 ),
-              ),
-              _buildIndicators(),
-              _buildBottomSection(),
-            ],
-          );
-        },
+                _buildIndicators(),
+                _buildBottomSection(),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -84,7 +86,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SvgIcons.esate(size: 32),
+              SvgIcons.estate(size: 32),
               const SizedBox(width: 5),
               Text(
                 content.title,

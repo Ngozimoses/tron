@@ -6,6 +6,7 @@ import 'presentation/blocs/auth/auth_bloc.dart';
 import 'presentation/blocs/onboarding/onboarding_bloc.dart';
 import 'presentation/blocs/home/home_bloc.dart';
 import 'presentation/router/app_router.dart';
+import 'presentation/router/auth_notifier.dart'; // Import the notifier
 import 'core/theme/app_theme.dart';
 
 void main() async {
@@ -18,6 +19,9 @@ void main() async {
 
   await di.init();
   await di.sl.allReady();
+
+  // Initialize auth status
+  await authNotifier.checkAuthStatus();
 
   runApp(const EstateApp());
 }
@@ -39,7 +43,7 @@ class EstateApp extends StatelessWidget {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: ThemeMode.light,
-        routerConfig: appRouter, // ✅ Uses the updated router with ShellRoute
+        routerConfig: appRouter,
         builder: (context, child) {
           return MediaQuery(
             data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),

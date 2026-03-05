@@ -39,8 +39,10 @@ class ServiceDetailPage extends StatelessWidget {
     };
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
+      backgroundColor: Colors.white,
+      appBar: AppBar(flexibleSpace: Container(
+        color:Colors.white,
+      ),
         backgroundColor: Colors.white,
         elevation: 0,
         leading:GestureDetector(

@@ -36,9 +36,11 @@ class _ChangeEmailPageState extends State<ChangeEmailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
+      appBar: AppBar(flexibleSpace: Container(
+        color:Colors.white,
+      ),
         backgroundColor: Colors.white,
-        elevation: 0,
+        elevation: 0,centerTitle: false,
         leading:GestureDetector(
           onTap: () => context.pop(),
           child: Padding(
@@ -70,9 +72,9 @@ class _ChangeEmailPageState extends State<ChangeEmailPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Current Email
-              const Text(
+                Text(
                 'Current Email',
-                style: TextStyle(
+                style: GoogleFonts.outfit(
                   color: AppColors.primaryblack,
                   fontSize: 16,
                   fontWeight: FontWeight.w400,
@@ -139,13 +141,13 @@ class _ChangeEmailPageState extends State<ChangeEmailPage> {
               const SizedBox(height: 24),
 
               // New Email
-              const Text(
+                Text(
                 'New Email',
-                style: TextStyle(
-                  color: AppColors.primaryblack,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                ),
+                  style: GoogleFonts.outfit(
+                    color: AppColors.primaryblack,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                  ),
               ),
               const SizedBox(height: 8),
               TextFormField(
@@ -217,13 +219,13 @@ class _ChangeEmailPageState extends State<ChangeEmailPage> {
               const SizedBox(height: 24),
 
               // Confirm Email
-              const Text(
+                Text(
                 'Confirm Email',
-                style: TextStyle(
-                  color: AppColors.primaryblack,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                ),
+                  style: GoogleFonts.outfit(
+                    color: AppColors.primaryblack,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                  ),
               ),
               const SizedBox(height: 8),
               TextFormField(
@@ -295,7 +297,7 @@ class _ChangeEmailPageState extends State<ChangeEmailPage> {
               const SizedBox(height: 32),
 
               // Continue Button
-              SizedBox(
+              SizedBox(height: 48,
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {

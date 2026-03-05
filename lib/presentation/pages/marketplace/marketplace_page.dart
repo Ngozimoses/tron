@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/svg_icons.dart';
 
 class MarketplacePage extends StatefulWidget {
   const MarketplacePage({Key? key}) : super(key: key);
@@ -72,7 +73,9 @@ class _MarketplacePageState extends State<MarketplacePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor:Colors.white,
-      appBar: AppBar(
+      appBar: AppBar(flexibleSpace: Container(
+        color:Colors.white,
+      ),
         backgroundColor: Colors.white,
         elevation: 0,
         title: Row(
@@ -83,7 +86,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
 
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: const Icon(Icons.storefront, color: Colors.black, size: 24),
+              child: SvgIcons.store01(size: 24),
             ),
             const SizedBox(width: 8),
               Text(
@@ -167,14 +170,28 @@ class _MarketplacePageState extends State<MarketplacePage> {
       decoration: InputDecoration(
         hintText: 'Search for services...',
 
-        prefixIcon: const Icon(Icons.search, color: AppColors.textHint),
+        prefixIcon:      Padding(
+          padding: const EdgeInsets.all(12),
+          child: SvgIcons.search(size: 20),
+        ),
         suffixIcon: GestureDetector(
           onTap: () {
             if (_searchController.text.isNotEmpty) {
               context.push('/marketplace/search?query=${_searchController.text}');
             }
           },
-          child: const Icon(Icons.filter_list, color: AppColors.textHint),
+          child:  Padding(
+            padding: const EdgeInsets.all(12),
+            child: Container(
+                decoration: BoxDecoration( borderRadius: BorderRadius.circular(5),
+                  border: Border.all(width: 1
+                  ,color:Color.fromRGBO(156, 163, 175, 1)),color: Color.fromRGBO(209, 213, 219, 0.2)
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(5.0),
+                  child: SvgIcons.filter(size: 14),
+                )),
+          ),
         ),
         hintStyle: GoogleFonts.outfit(color: Color.fromRGBO(156, 163, 175, 1),fontWeight: FontWeight.w400,fontSize: 16),
 

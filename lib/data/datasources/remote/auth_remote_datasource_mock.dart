@@ -26,16 +26,17 @@ class AuthRemoteDataSourceMock implements AuthRemoteDataSource {
   }
 
   @override
-  Future<ResidentModel> verifyOtp({required String contact, required String otp}) async {
-    // Simulate network delay
+  Future<Map<String, dynamic>> verifyOtp({required String contact, required String otp}) async {
     await Future.delayed(const Duration(milliseconds: AppEnvironment.mockApiDelay));
 
-    // Validate OTP in mock mode
     if (otp == AppEnvironment.mockOtp && contact == _storedContact) {
       print('🔐 [MOCK] OTP verified for $contact');
 
-      // Return mock resident data
-      return ResidentModel.fromJson(AppEnvironment.mockResident);
+      // Return both resident and mock token
+      return {
+        'resident': ResidentModel.fromJson(AppEnvironment.mockResident),
+        'token': 'mock_jwt_token_${DateTime.now().millisecondsSinceEpoch}',
+      };
     }
 
     throw ServerException(

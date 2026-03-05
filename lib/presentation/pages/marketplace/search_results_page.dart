@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/svg_icons.dart';
 
 class SearchResultsPage extends StatefulWidget {
   final String query;
@@ -49,8 +50,10 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
+      backgroundColor: Colors.white,
+      appBar: AppBar(flexibleSpace: Container(
+        color:Colors.white,
+      ),
         backgroundColor: Colors.white,
         elevation: 0,
 
@@ -81,38 +84,81 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.divider),
-              ),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search for services...',
-                  border: InputBorder.none,
-                  prefixIcon: const Icon(Icons.search, color: AppColors.textHint),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                    icon: const Icon(Icons.clear, color: AppColors.textHint),
-                    onPressed: () {
-                      _searchController.clear();
-                      setState(() {});
-                    },
-                  )
-                      : null,
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search for services...',
+                hintStyle: GoogleFonts.outfit(color: Color.fromRGBO(156, 163, 175, 1),fontWeight: FontWeight.w400,fontSize: 16),
+
+                // Add border with black color and 12 radius
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Color.fromRGBO(156, 163, 175, 1),
+                    width: 1, // You can adjust the width as needed
+                  ),
                 ),
-                onChanged: (value) {
-                  setState(() {});
-                },
-                onSubmitted: (value) {
-                  if (value.isNotEmpty) {
-                    context.push('/marketplace/search?query=$value');
-                  }
-                },
+
+                // You might also want to define borders for different states
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Color.fromRGBO(156, 163, 175, 1),
+                    width: 1,
+                  ),
+                ),
+
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Color.fromRGBO(156, 163, 175, 1),
+                    width: 1, // Slightly thicker when focused for better UX
+                  ),
+                ),
+
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Colors.red, // Keep error border red for visibility
+                    width: 1,
+                  ),
+                ),
+
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Colors.red,
+                    width: 2,
+                  ),
+                ),
+
+                // Add some content padding for better appearance
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                prefixIcon:      Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: SvgIcons.search(size: 20),
+                ),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                  icon: const Icon(Icons.clear, color: AppColors.textHint),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {});
+                  },
+                )
+                    : null,
               ),
+              onChanged: (value) {
+                setState(() {});
+              },
+              onSubmitted: (value) {
+                if (value.isNotEmpty) {
+                  context.push('/marketplace/search?query=$value');
+                }
+              },
             ),
           ),
           Expanded(

@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../../core/theme/app_colors.dart';
 
@@ -41,7 +42,9 @@ class _AboutAppPageState extends State<AboutAppPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
+      appBar: AppBar(flexibleSpace: Container(
+        color:Colors.white,
+      ),
         backgroundColor: Colors.white,
         elevation: 0,
         leading:GestureDetector(
@@ -58,24 +61,35 @@ class _AboutAppPageState extends State<AboutAppPage> {
             ),
           ),
         ),
-        title: const Text(
+        title:   Text(
           'About the App',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+          style: GoogleFonts.outfit(
+            color: AppColors.primaryblack,
+            fontSize: 24,
+            fontWeight: FontWeight.w500,
           ),
-        ),
+        ),centerTitle: false,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             Container(
+              padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.divider),
+                border: Border.all(
+                  color: const Color.fromRGBO(156, 163, 175, 0.2),
+                  width: 0.4,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Column(
                 children: [
@@ -85,17 +99,17 @@ class _AboutAppPageState extends State<AboutAppPage> {
                   const Divider(height: 1, color: AppColors.divider),
                   _buildMenuItem(
                     title: 'About QRCode.ng',
-                    onTap: () => context.push('/settings/about-qrcl'),
+                    onTap: () => context.push('/about-qrcl'),
                   ),
                   const Divider(height: 1, color: AppColors.divider),
                   _buildMenuItem(
                     title: 'Terms & Conditions',
-                    onTap: () => context.push('/settings/terms-conditions'),
+                    onTap: () => context.push('/terms-conditions'),
                   ),
                   const Divider(height: 1, color: AppColors.divider),
                   _buildMenuItem(
                     title: 'Privacy Policy',
-                    onTap: () => context.push('/settings/privacy-policy'),
+                    onTap: () => context.push('/privacy-policy'),
                   ),
                   const Divider(height: 1, color: AppColors.divider),
                   _buildMenuItem(
@@ -122,14 +136,15 @@ class _AboutAppPageState extends State<AboutAppPage> {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 14,
+            style: GoogleFonts.outfit(
+              color: AppColors.primaryblack,
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
             ),
           ),
           Text(
             value,
-            style: const TextStyle(
+            style: GoogleFonts.outfit(
               color: AppColors.textSecondary,
               fontSize: 14,
             ),
@@ -152,9 +167,10 @@ class _AboutAppPageState extends State<AboutAppPage> {
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 14,
+                style: GoogleFonts.outfit(
+                  color: AppColors.primaryblack,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             ),
